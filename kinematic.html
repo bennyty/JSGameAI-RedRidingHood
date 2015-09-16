@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<script type="text/javascript">
+			function game() {
+				var canvas = document.getElementById("gameCanvas"),
+				ctx = canvas.getContext("2d"),
+				width = window.innerWidth,
+				height = window.innerHeight,
+				mX = width/2,
+				mY = height/2,
+				tileSize = 33,
+				running = false,
+				agents = [],
+				TO_RADIANS = Math.PI/180,
+				spritesheet = new Image(),
+				c=0;
+
+				spritesheet.src = 'img/sprites.png';
+				spritesheet.onload = spriteLoaded;
+
+				canvas.width = width;
+				canvas.height = height;
+
+				function spriteLoaded () {
+					render();
+
+					canvas.addEventListener("mousemove", function (e) {
+						mX = e.pageX;
+						mY = e.pageY;
+					});
+
+
+					canvas.addEventListener("mouseenter", function (e) {
+						if(!running){
+							running = true;
+							render();
+						}
+					});
+
+					canvas.addEventListener("mouseleave", function (e) {
+						running = false;
+					});
+
+					canvas.addEventListener("click", function (e) {
+						c++;
+					});
+				}
+
+				function rotateAndPaintImage ( context, spriteNum, angleInRad, axisX, axisY ) {
+					context.translate( axisX, axisY );
+					context.rotate( angleInRad );
+					context.drawImage(spritesheet,
+						spriteNum*tileSize,
+						0,
+						tileSize,
+						tileSize,
+						-((1+tileSize)/2),
+						-((1+tileSize)/2),
+						tileSize,
+						tileSize);
+					context.rotate( -angleInRad );
+					context.translate( -axisX, -axisY );
+				}
+
+
+				var Agent = function (x, y, heading, radius, color, state, sprite) {
+					this.x = x || 0;
+					this.y = y || 0;
+					this.radius = radius || 10;
+					this.speed = 20;
+					// this.maxVelocity = 20;
+					this.maxAcceleration = 10;
+					this.heading = heading || 0;
+					this.xVel = this.yVel = 0;
+					this.xAcc = this.yAcc = 0;
+					this.xSteer = this.ySteer = 0;
+					this.color = color || "rgb(0,0,255)";
+					this.state = state || "None";
+					this.sprite = (typeof sprite === 'undefined') ? -1 : sprite;
+
+					console.log(this);
+				};
+
+				function crosshairAt(x,y) {
+					ctx.beginPath();
+					ctx.moveTo(x,0);
+					ctx.lineTo(x, height);
+					ctx.moveTo(0,y);
+					ctx.lineTo(width, y);
+					ctx.stroke();
+				}
+
+				function drawVector(x,y,vX,vY) {
+					ctx.beginPath();
+					ctx.moveTo(x,y);
+					ctx.lineTo(x+vX,y+vY);
+					ctx.stroke();
+				}
+
+				Agent.prototype.update = function (x, y) {
+				    // this.heading = - Math.atan2(this.x-x, this.y-y);
+				    this.heading = -Math.atan2(this.xVel, this.yVel);
+
+				    switch(this.state) {
+				    	case "Seek":
+				    		this.xVel = (x-this.x)/this.speed;
+					    	this.yVel = (y-this.y)/this.speed;
+					    	// this.xVel = 
+					    	break;
+					    case "Arrive":
+					    	break;
+				    }
+
+
+
+				    this.x += this.xVel;
+				    this.y += this.yVel;
+				};
+
+				Agent.prototype.render = function () {
+					if (this.sprite === -1) {
+						ctx.fillStyle = this.color;
+						ctx.beginPath();
+						ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+						ctx.closePath();
+						ctx.fill();
+					} else {
+						rotateAndPaintImage(ctx, this.sprite, this.heading, this.x, this.y);
+					}
+					
+				};
+
+				var ball1 = new Agent(width/2, height/2, 0, 0, "", "Seek", 0),
+					dot1 = new Agent(width/2, height/2, 0, 2, "rgb(255,0,0)");
+				agents.push(dot1, ball1);
+
+				function render() {
+					ctx.clearRect(0, 0, width, height);
+					for (var i = agents.length - 1; i >= 0; i--) {
+						agents[i].update(mX, mY);
+						agents[i].render();
+					}
+					if (running) {
+						requestAnimationFrame(render);
+					}
+				}
+			render();
+			}
+		</script>
+	</head>
+	<body onload="game()">
+		<canvas id="gameCanvas" width="0" height="0"></canvas>
+	</body>
+</html>
