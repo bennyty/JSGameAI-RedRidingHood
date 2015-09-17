@@ -44,6 +44,7 @@ function Vector2D(x,y) {
 			var a = this.angle();
 			this.x = Math.cos(a) * val;
 			this.y = Math.sin(a) * val;
+			return this.me;
 		} else {
 			return Math.sqrt(this.length2());
 		}

@@ -7,6 +7,7 @@ function game() {
 	tileSize = 33,
 	running = false,
 	agents = [],
+	pathToGrannys = [],
 	TO_RADIANS = Math.PI/180,
 	spritesheet = new Image(),
 	c=0;
@@ -17,8 +18,38 @@ function game() {
 	canvas.width = width;
 	canvas.height = height;
 
+
+	// function Wander(properties) {
+	// 	this.radius = properties.radius || 30;
+	// 	this.offset = properties.offset || 50;
+	// 	this.angleChange = properties.angleChange || 0.5;
+	// 	this.wanderAngle = 0;
+
+	// 	this.steer = function (velocity, position, maxSpeed) { //Position is unused;
+	// 		var circleMidde = velocity.clone().normalize().multiply(this.offset);
+	// 		drawCircle({center: circleMidde, radius: this.radius, color: "#FF5C40" });
+	// 		var displacement = new Vector2D(0,-1);
+	// 		displacement.multiply(this.radius);
+	// 		this.wanderAngle += (Math.random() * this.angleChange) - (this.angleChange * 0.5);
+	// 		displacement.angle(this.wanderAngle);
+	// 		var steering = circleMidde.add(displacement);
+	// 		steering.truncate((maxSpeed/40));
+	// 		return steering;
+	// 	};
+
+	// 	this.toString = function() {
+	// 		return "Wander";
+	// 	};
+	// }
+
 	function spriteLoaded () {
-		// render();
+		pathToGrannys.push(new Vector2D(width * 0.3,height * 0.8));
+		pathToGrannys.push(new Vector2D(width * 0.8,height * 0.8));
+		pathToGrannys.push(new Vector2D(width * 0.9,height * 0.1));
+		pathToGrannys.push(new Vector2D(width * 0.6,height * 0.3));
+
+
+		render();
 
 		canvas.addEventListener("mousemove", function (e) {
 			mouseVector.x = e.pageX;
@@ -38,7 +69,16 @@ function game() {
 		});
 
 		canvas.addEventListener("click", function (e) {
-			c++;
+			// c++;
+			// console.log(c + " " + c%3);
+			// if (c%3 == 1) {
+			// 	player.state = new Flee({target: mouseVector});
+			// } else if (c%3 == 2) {
+			// 	player.state = new Wander({});
+			// } else {
+			// 	player.state = new Seek({target: mouseVector,mindistance: 0});
+			// }
+			pathToGrannys.push(mouseVector.clone());
 		});
 	}
 
@@ -98,38 +138,59 @@ function game() {
 		ctx.stroke();
 	}
 
+	function drawCircle(properties) {
+		ctx.fillStyle = properties.color;
+		ctx.beginPath();
+		ctx.arc(properties.center.x, properties.center.y, properties.radius, 0, Math.PI * 2);
+		ctx.closePath();
+		if (properties.filled) {
+			ctx.fill();
+		}
+	}
+
 	function drawType(text,x,y,color) {
-			ctx.fillStyle = color;
-			ctx.font = "16px Arial";
-			ctx.fillText(text, x, y);
+		// ctx.fillStyle = color;
+		ctx.font = "16px Arial";
+		ctx.fillText(text, x, y);
 	}
 
 	Agent.prototype.update = function () {
-		if (c>=1) {
-			var bul = new Agent({
-				x: player.x,
-				y: player.y,
-				velocity: player.velocity.clone().normalize().multiply(2),
-				radius: 2,
-				color: "rgb(255,0,0)",
-				sprite: -1});
-			crosshairAt(bul.x,bul.y);
-			agents.push(bul);
-			c = 0;
-		}
+		// if (c%2==1) {
+		// 	var bul = new Agent({
+		// 		x: player.x,
+		// 		y: player.y,
+		// 		velocity: player.velocity.clone().normalize().multiply(2),
+		// 		radius: 2,
+		// 		color: "rgb(255,0,0)",
+		// 		sprite: -1});
+		// 	crosshairAt(bul.x,bul.y);
+		// 	agents.push(bul);
+		// }
 	    this.velocity.truncate(this.maxVelocity);
 		this.position.add(this.velocity);
 		this.heading = -Math.atan2(this.velocity.x, this.velocity.y);
 		this.velocity.add(this.state.steer(this.velocity, this.position, this.maxVelocity, this.mass));
+		
 
-		if (this.position.x < 0)
-			this.position.x = 0;
-		if (this.position.y < 0)
-			this.position.y = 0;
-		if (this.position.x > width)
-			this.position.x = width;
-		if (this.position.y > width)
-			this.position.y = width;
+
+
+		// Stay on the stage
+		// if (this.position.x < 10) {
+		// 	this.position.x = 10;
+		// 	this.velocity.reverse();
+		// }
+		// if (this.position.y < 10) {
+		// 	this.position.y = 10;
+		// 	this.velocity.reverse();
+		// }
+		// if (this.position.x > width-10) {
+		// 	this.position.x = width-10;
+		// 	this.velocity.reverse();
+		// }
+		// if (this.position.y > height-10) {
+		// 	this.position.y = height-10;
+		// 	this.velocity.reverse();
+		// }
 	};
 
 	Agent.prototype.render = function () {
@@ -142,7 +203,7 @@ function game() {
 		} else {
 			rotateAndPaintImage(ctx, this.sprite, this.heading, this.position.x, this.position.y);
 			drawVector(this.position.x,this.position.y,this.velocity.x*10,this.velocity.y*10,'#9CDD05');
-			drawType(this.state.toString(), this.x+30,this.y+30, "#FF0000");
+			drawType(this.state.toString(), this.position.x+10,this.position.y+10, "#A3D3E9");
 		}
 		
 	};
@@ -150,9 +211,30 @@ function game() {
 	var player = new Agent({
 		x: width/2,
 		y: height/2,
-		mass: 50,
-		state: new Seek({target: mouseVector,mindistance: 0}),
+		mass: 20,
+		maxVelocity: 6,
+		// state: new Seek({target: mouseVector,mindistance: 0}),
+		// state: new Wander({}),
+		state: new followPath({path: pathToGrannys}),
 		sprite: 0});
+	var woodsman = new Agent({
+		x: width/2,
+		y: height/2,
+		mass: 50,
+		maxVelocity: 2,
+		// state: new Seek({target: mouseVector,mindistance: 0}),
+		state: new Wander({}),
+		// state: new followPath({path: pathToGrannys}),
+		sprite: 1});
+	var wolf = new Agent({
+		x: width * 0.1,
+		y: height * 0.1,
+		mass: 50,
+		maxVelocity: 5,
+		state: new Seek({target: player.position, mindistance: 0}),
+		// state: new Wander({}),
+		// state: new followPath({path: pathToGrannys}),
+		sprite: 1});
 	var	dot1 = new Agent({
 		x:width/2,
 		y:height/2,
