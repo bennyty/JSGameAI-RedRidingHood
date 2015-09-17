@@ -21,6 +21,7 @@ function Seek(properties) {
 
 	this.minDistance = properties.minDistance || 10;
 	this.target = properties.target || new Vector2D(0,0);
+	this.stopper = function (){};
 
 	this.toString = function() {
 		return "Seek";
@@ -28,8 +29,9 @@ function Seek(properties) {
 
 	this.steer = function(velocity, position, maxSpeed, mass) {
 		var distance = this.target.clone().subtract(position);
-		if(Math.abs(distance.x) < this.minDistance && Math.abs(distance.y) < this.minDistance) {
-			return new Vector2D(0,0);
+		if(distance.length() < this.minDistance) {
+			stopper = new Stop({});
+			return stopper.steer(velocity, position, maxSpeed, mass);
 		} else {
 			return this.target.clone().subtract(position).normalize().multiply(maxSpeed).subtract(velocity).divide(mass);
 		}		
@@ -44,57 +46,60 @@ function Flee(properties){
 	};
 
 	this.steer = function(velocity, position, maxSpeed, mass) {
-		var desiredVelocity = this.target.clone().subtract(position).normalize().multiply(maxSpeed);
+		var desiredVelocity = this.target.clone().subtract(position).normalize().multiply(maxSpeed).reverse();
 		var steeringForce = desiredVelocity.subtract(velocity);
-		var outputForce = steeringForce.divide(mass).reverse();
+		var outputForce = steeringForce.divide(mass);
 		return outputForce;
 	};
 }
 
 function Wander(properties) {
-	this.radius = properties.radius || 30;
-	this.offset = properties.offset || 50;
-	this.angleChange = properties.angleChange || 0.5;
+	this.radius = properties.radius || 50;
+	this.offset = properties.offset || 20;
+	this.angleChange = properties.angleChange || 50;
 	this.wanderAngle = 0;
+
+	// this.steer = function (velocity, position, maxSpeed, mass) {
+	// 	var offsetVector = new Vector2D(0,1);
+	// 	offsetVector.length(this.offset).angle(velocity.angle());
+	// 	var circleMidde = position.clone().add(offsetVector);
+	// 	var displacement = new Vector2D(0,1);
+	// 	displacement.multiply(this.radius);
+	// 	this.wanderAngle += (Math.random() * this.angleChange) - (this.angleChange * 0.5);
+	// 	// var steering = circleMidde.add(displacement);
+	// 	// drawVector(circleMidde.x, circleMidde.y, displacement.x, displacement.y);
+	// 	return displacement;
+	// };
 
 
 	this.steer = function (velocity, position, maxSpeed, mass) {
 		var circleMidde = velocity.clone().normalize().multiply(this.offset);
 		// drawCircle({center: circleMidde, radius: this.radius, color: "#FF5C40" });
 		var displacement = new Vector2D(0,-1);
-		displacement.multiply(this.radius);
-		this.wanderAngle += (Math.random() * this.angleChange) - (this.angleChange * 0.5);
+		// displacement.multiply(this.radius);
+		this.wanderAngle += (Math.random() * this.angleChange) + (this.wanderAngle * 0.5);
 		displacement.angle(this.wanderAngle);
 		var steering = circleMidde.add(displacement);
 		return steering;
 	};
-
-	// this.steer = function (velocity, position, maxSpeed, mass) {
-	// 	var offsetVector = new Vector2D(0,1);
-	// 	offsetVector.length(this.offset).angle(velocity.angle());
-	// 	var circleMidde = position.add(offsetVector);
-	// 	drawCircle({center: circleMidde, radius: this.radius, color: "#FF5C40" });
-	// 	var displacement = new Vector2D(0,-1);
-	// 	displacement.multiply(this.radius);
-	// 	this.wanderAngle += (Math.random() * this.angleChange) - (this.angleChange * 0.5);
-	// 	displacement.angle(this.wanderAngle);
-	// 	var steering = circleMidde.add(displacement);
-	// 	return steering;
-	// };
 
 	this.toString = function() {
 		return "Wander";
 	};
 }
 
+
+
 function Stop(properties) {
 	this.drag = properties.drag || 0.06;
 
 	this.steer = function(velocity, position, maxSpeed, mass) {
-		console.log(velocity.length());
 		if (velocity.length() < 0.05) {
-			velocity.multiply(0.00000001);
+			velocity.multiply(0.0001);
 			return new Vector2D(0,0);
+		}
+		if (velocity.length() < 0.0001) {
+			return new Vector2D (0,0);
 		}
 		return velocity.clone().reverse().normalize().multiply(this.drag);
 	};
